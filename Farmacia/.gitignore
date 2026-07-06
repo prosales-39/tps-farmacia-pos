@@ -1,0 +1,19 @@
+# Base de datos SQLite
+database/farmacia.db
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de VS Code
+.vscode/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
