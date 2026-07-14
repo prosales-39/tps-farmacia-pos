@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from controllers.inventario_controller import InventarioController
-from utils.helpers import formatear_precio
-from views.formulario_producto import FormularioProducto
+from controllers.proveedores_controller import ProveedoresController
+from views.formulario_proveedor import FormularioProveedor
 
-class InventarioView:
+class ProveedoresView:
 
     def __init__(self, contenedor):
         self.contenedor = contenedor
@@ -52,7 +51,7 @@ class InventarioView:
         scroll_y = ttk.Scrollbar(frame_tabla, orient="vertical")
         scroll_x = ttk.Scrollbar(frame_tabla, orient="horizontal")
 
-        columnas = ("Código", "Nombre", "Stock", "Precio", "Vencimiento", "Lote")
+        columnas = ("Nombre", "Teléfono", "Correo", "Dirección")
         self.tabla = ttk.Treeview(
             frame_tabla,
             columns=columnas,
@@ -65,19 +64,15 @@ class InventarioView:
         scroll_y.config(command=self.tabla.yview)
         scroll_x.config(command=self.tabla.xview)
 
-        self.tabla.heading("Código", text="Código")
-        self.tabla.heading("Nombre", text="Medicamento")
-        self.tabla.heading("Stock", text="Stock")
-        self.tabla.heading("Precio", text="Precio")
-        self.tabla.heading("Vencimiento", text="Vencimiento")
-        self.tabla.heading("Lote", text="Lote")
+        self.tabla.heading("Nombre", text="Nombre")
+        self.tabla.heading("Teléfono", text="Teléfono")
+        self.tabla.heading("Correo", text="Correo")
+        self.tabla.heading("Dirección", text="Dirección")
 
-        self.tabla.column("Código", width=100, anchor="center")
-        self.tabla.column("Nombre", width=200, anchor="w")
-        self.tabla.column("Stock", width=80, anchor="center")
-        self.tabla.column("Precio", width=100, anchor="e")
-        self.tabla.column("Vencimiento", width=120, anchor="center")
-        self.tabla.column("Lote", width=100, anchor="center")
+        self.tabla.column("Nombre", width=150, anchor="w")
+        self.tabla.column("Teléfono", width=120, anchor="center")
+        self.tabla.column("Correo", width=180, anchor="w")
+        self.tabla.column("Dirección", width=180, anchor="w")
 
         self.tabla.grid(row=0, column=0, sticky="nsew")
         scroll_y.grid(row=0, column=1, sticky="ns")
@@ -93,9 +88,9 @@ class InventarioView:
         frame.pack(fill="x", padx=20, pady=(0, 20))
 
         botones = [
-            ("➕ Nuevo", self.nuevo_producto),
-            ("✏️ Editar", self.editar_producto),
-            ("🗑️ Eliminar", self.eliminar_producto),
+            ("➕ Nuevo", self.nuevo_proveedor),
+            ("✏️ Editar", self.editar_proveedor),
+            ("🗑️ Eliminar", self.eliminar_proveedor),
             ("🔄 Actualizar", self.cargar_tabla)
         ]
 
@@ -112,25 +107,22 @@ class InventarioView:
                 pady=5
             ).pack(side="left", padx=(0, 10))
 
-    def cargar_tabla(self, productos=None):
-        # Limpiar tabla
+    def cargar_tabla(self, proveedores=None):
         for fila in self.tabla.get_children():
             self.tabla.delete(fila)
 
-        if productos is None:
-            productos = InventarioController.listar_productos()
+        if proveedores is None:
+            proveedores = ProveedoresController.listar_proveedores()
 
-        for p in productos:
+        for p in proveedores:
             self.tabla.insert(
                 "",
                 "end",
                 values=(
-                    p["codigo"],
                     p["nombre"],
-                    p["stock"],
-                    formatear_precio(p["precio"]),
-                    p["fecha_vencimiento"] or "",
-                    p["lote"] or ""
+                    p["telefono"] or "",
+                    p["correo"] or "",
+                    p["direccion"] or ""
                 ),
                 tags=(p["id"],)
             )
@@ -138,10 +130,10 @@ class InventarioView:
     def buscar_automatico(self, event=None):
         termino = self.entry_busqueda.get().strip()
         if termino:
-            productos = InventarioController.buscar_productos(termino)
+            proveedores = ProveedoresController.buscar_proveedores(termino)
         else:
-            productos = InventarioController.listar_productos()
-        self.cargar_tabla(productos)
+            proveedores = ProveedoresController.listar_proveedores()
+        self.cargar_tabla(proveedores)
 
     def limpiar_busqueda(self):
         self.entry_busqueda.delete(0, tk.END)
@@ -152,40 +144,33 @@ class InventarioView:
         if seleccion:
             item = self.tabla.item(seleccion[0])
             self.id_seleccionado = item["tags"][0] if item["tags"] else None
+
+    def nuevo_proveedor(self):
+        FormularioProveedor(
+            self.contenedor,
+            proveedor_id=None,
+            callback_guardar=self.cargar_tabla
+        )
+
+    def editar_proveedor(self):
+        if self.id_seleccionado:
+            FormularioProveedor(
+                self.contenedor,
+                proveedor_id=self.id_seleccionado,
+                callback_guardar=self.cargar_tabla
+            )
         else:
-            self.id_seleccionado = None
+            messagebox.showwarning("Seleccionar", "Primero selecciona un proveedor")
 
-    def nuevo_producto(self):
-        """Abre el formulario para crear un nuevo producto."""
-        FormularioProducto(
-            parent=self.contenedor.winfo_toplevel(),
-            producto_id=None,
-            callback_guardar=self.cargar_tabla
-        )
-
-    def editar_producto(self):
-        """Abre el formulario para editar el producto seleccionado."""
-        if not self.id_seleccionado:
-            messagebox.showwarning("Seleccionar", "Primero selecciona un producto")
-            return
-
-        FormularioProducto(
-            parent=self.contenedor.winfo_toplevel(),
-            producto_id=self.id_seleccionado,
-            callback_guardar=self.cargar_tabla
-        )
-
-    def eliminar_producto(self):
-        """Elimina el producto seleccionado."""
-        if not self.id_seleccionado:
-            messagebox.showwarning("Seleccionar", "Primero selecciona un producto")
-            return
-
-        if messagebox.askyesno("Confirmar", "¿Eliminar este producto?"):
-            try:
-                InventarioController.eliminar_producto(self.id_seleccionado)
-                self.cargar_tabla()
-                self.id_seleccionado = None
-                messagebox.showinfo("Éxito", "Producto eliminado correctamente.")
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo eliminar: {e}")
+    def eliminar_proveedor(self):
+        if self.id_seleccionado:
+            if messagebox.askyesno("Confirmar", "¿Eliminar este proveedor?"):
+                try:
+                    ProveedoresController.eliminar_proveedor(self.id_seleccionado)
+                    self.cargar_tabla()
+                    self.id_seleccionado = None
+                    messagebox.showinfo("Eliminado", "Proveedor eliminado correctamente.")
+                except Exception as e:
+                    messagebox.showerror("Error", f"No se pudo eliminar: {str(e)}")
+        else:
+            messagebox.showwarning("Seleccionar", "Primero selecciona un proveedor")

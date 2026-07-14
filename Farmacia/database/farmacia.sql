@@ -127,3 +127,16 @@ INSERT INTO usuarios (nombre, usuario, password, rol_id)
 VALUES
 ('Administrador General', 'admin', 'admin123', 1);
 
+INSERT INTO productos (codigo, nombre, categoria, precio, stock, stock_minimo, fecha_vencimiento, lote, requiere_receta)
+VALUES
+('MED001', 'Acetaminofén 500 mg', 'Analgésico', 2500, 50, 10, '2027-12-20', 'L001', 0),
+('MED002', 'Ibuprofeno 400 mg', 'Antiinflamatorio', 3500, 25, 10, '2028-03-15', 'L002', 0),
+('MED003', 'Amoxicilina 500 mg', 'Antibiótico', 9800, 15, 5, '2027-08-10', 'L003', 1),
+('MED004', 'Loratadina', 'Antialérgico', 4200, 18, 5, '2027-11-05', 'L004', 0),
+('MED005', 'Omeprazol', 'Gastrointestinal', 5600, 35, 10, '2028-05-18', 'L005', 0);
+
+
+INSERT INTO proveedores (nombre, telefono, correo, direccion) VALUES
+('Distribuidora Farmacéutica S.A.', '3001234567', 'ventas@dfsa.com', 'Calle 1 #2-3, Bogotá'),
+('Laboratorios Vital', '3009876543', 'contacto@vital.com', 'Carrera 4 #5-6, Medellín'),
+('Droguería Cruz Azul', '3004567890', 'cruzazul@email.com', 'Avenida 7 #8-9, Cali');
