@@ -134,5 +134,7 @@ class Login:
             messagebox.showerror("Error", "Credenciales incorrectas")
             return
 
+        # Convertir a dict y pasar a MainWindow
+        datos_dict = dict(datos)
         self.ventana.destroy()
-        MainWindow(dict(datos))
+        MainWindow(datos_dict)

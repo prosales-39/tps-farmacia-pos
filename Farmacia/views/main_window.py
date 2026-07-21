@@ -14,6 +14,7 @@ class MainWindow:
     def __init__(self, usuario_data):
         self.usuario = usuario_data
         self.usuario_id = usuario_data["id"]
+        self.rol = usuario_data.get("rol", "Empleado")
         self.root = tk.Tk()
         self.root.title("Farmacia POS")
         self.root.geometry("1200x700")
@@ -27,6 +28,10 @@ class MainWindow:
         
         self.root.mainloop()
 
+    def es_admin(self):
+        """Verifica si el usuario actual es administrador."""
+        return self.rol == "Administrador"
+
     def limpiar_contenido(self):
         for widget in self.contenido.winfo_children():
             widget.destroy()
@@ -36,6 +41,8 @@ class MainWindow:
         DashboardView(self.contenido)
 
     def mostrar_inventario(self):
+        if not self.es_admin():
+            return
         self.limpiar_contenido()
         InventarioView(self.contenido)
 
@@ -44,14 +51,20 @@ class MainWindow:
         VentasView(self.contenido, self.usuario_id)
 
     def mostrar_compras(self):
+        if not self.es_admin():
+            return
         self.limpiar_contenido()
         ComprasView(self.contenido, self.usuario_id)
 
     def mostrar_proveedores(self):
+        if not self.es_admin():
+            return
         self.limpiar_contenido()
         ProveedoresView(self.contenido)
 
     def mostrar_usuarios(self):
+        if not self.es_admin():
+            return
         self.limpiar_contenido()
         UsuariosView(self.contenido)
 
@@ -70,6 +83,8 @@ class MainWindow:
         StockBajoView(self.contenido)
 
     def mostrar_backup(self):
+        if not self.es_admin():
+            return
         self.limpiar_contenido()
         from views.backup import BackupView
         BackupView(self.contenido)
@@ -115,9 +130,10 @@ class MainWindow:
             font=("Segoe UI", 18, "bold")
         ).pack(side="left", padx=20)
 
+        # Mostrar usuario y rol
         tk.Label(
             header,
-            text=f"👤 {self.usuario['nombre']} ({self.usuario['rol']})",
+            text=f"👤 {self.usuario['nombre']} ({self.rol})",
             bg="#1565C0",
             fg="white",
             font=("Segoe UI", 11)
@@ -129,21 +145,16 @@ class MainWindow:
         menu = tk.Frame(principal, width=220, bg="#263238")
         menu.pack(side="left", fill="y")
 
-        opciones = {
+        # ============ OPCIONES COMUNES (todos los roles) ============
+        opciones_comunes = {
             "🏠 Inicio": self.mostrar_dashboard,
-            "💊 Inventario": self.mostrar_inventario,
             "💰 Ventas": self.mostrar_ventas,
             "📄 Facturas": self.mostrar_facturas,
-            "🚚 Compras": self.mostrar_compras,
-            "⚠️ Stock Bajo": self.mostrar_stock_bajo,
-            "👥 Usuarios": self.mostrar_usuarios,
-            "📦 Proveedores": self.mostrar_proveedores,
             "📊 Reportes": self.mostrar_reportes,
-            "💾 Backup": self.mostrar_backup,
-            "🚪 Salir": self.cerrar_aplicacion
+            "⚠️ Stock Bajo": self.mostrar_stock_bajo,
         }
 
-        for texto, comando in opciones.items():
+        for texto, comando in opciones_comunes.items():
             tk.Button(
                 menu,
                 text=texto,
@@ -157,6 +168,51 @@ class MainWindow:
                 anchor="w",
                 padx=20
             ).pack(fill="x", ipady=12)
+
+        # ============ OPCIONES DE ADMINISTRADOR ============
+        if self.es_admin():
+            # Separador
+            tk.Frame(menu, bg="#37474F", height=2).pack(fill="x", padx=10, pady=5)
+
+            opciones_admin = {
+                "💊 Inventario": self.mostrar_inventario,
+                "🚚 Compras": self.mostrar_compras,
+                "👥 Usuarios": self.mostrar_usuarios,
+                "📦 Proveedores": self.mostrar_proveedores,
+                "💾 Backup": self.mostrar_backup,
+            }
+
+            for texto, comando in opciones_admin.items():
+                tk.Button(
+                    menu,
+                    text=texto,
+                    command=comando,
+                    relief="flat",
+                    bg="#1a237e",  # Color diferente para opciones de admin
+                    fg="white",
+                    activebackground="#283593",
+                    activeforeground="white",
+                    font=("Segoe UI", 11),
+                    anchor="w",
+                    padx=20
+                ).pack(fill="x", ipady=12)
+
+        # ============ SALIR ============
+        tk.Frame(menu, bg="#37474F", height=2).pack(fill="x", padx=10, pady=5)
+
+        tk.Button(
+            menu,
+            text="🚪 Salir",
+            command=self.cerrar_aplicacion,
+            relief="flat",
+            bg="#263238",
+            fg="white",
+            activebackground="#37474F",
+            activeforeground="white",
+            font=("Segoe UI", 11),
+            anchor="w",
+            padx=20
+        ).pack(fill="x", ipady=12)
 
         self.contenido = tk.Frame(principal, bg="white")
         self.contenido.pack(side="right", fill="both", expand=True)

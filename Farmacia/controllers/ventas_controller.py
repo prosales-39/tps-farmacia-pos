@@ -53,3 +53,10 @@ class VentasController:
         from models.producto import Producto
         productos = Producto.buscar(termino) if termino else Producto.obtener_todos()
         return [p for p in productos if p["stock"] > 0]
+    
+    @staticmethod
+    def puede_realizar_venta(usuario_id):
+        """Verifica si el usuario puede realizar ventas."""
+        # Por ahora todos los usuarios autenticados pueden vender
+        # En el futuro, se podría verificar si el usuario está activo
+        return True
