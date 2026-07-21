@@ -81,7 +81,7 @@ class VentasView:
         self.frame_resultados = tk.Frame(self.contenedor, bg="white", height=100)
         self.frame_resultados.pack(fill="x", padx=20, pady=5)
         self.frame_resultados.pack_propagate(False)
-        self.frame_resultados.pack_forget()  # Ocultar inicialmente
+        self.frame_resultados.pack_forget()
 
         # Treeview para resultados de clientes
         self.tree_clientes = ttk.Treeview(
@@ -642,6 +642,9 @@ class VentasView:
             from models.cliente import Cliente
             cliente = Cliente.obtener_por_id(self.cliente_seleccionado)
             
+            # Guardar los IDs de los productos vendidos antes de la venta
+            productos_ids = [item["producto_id"] for item in self.carrito]
+            
             items = []
             for item in self.carrito:
                 items.append({
@@ -664,20 +667,30 @@ class VentasView:
             self.carrito.clear()
             self.actualizar_carrito()
             self.buscar_productos()
-            self.verificar_stock_despues_venta()
+            
+            # Verificar stock solo de los productos vendidos
+            self.verificar_stock_despues_venta(productos_ids)
             
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo completar la venta: {e}")
 
-    def verificar_stock_despues_venta(self):
+    def verificar_stock_despues_venta(self, productos_ids):
+        """
+        Verifica si los productos vendidos quedaron por debajo del stock mínimo.
+        Solo muestra alerta si algún producto vendido está bajo el mínimo.
+        """
         from models.notificacion import Notificacion
         
-        productos_bajos = Notificacion.verificar_stock_bajo()
+        if not productos_ids:
+            return
+        
+        # Verificar solo los productos vendidos
+        productos_bajos = Notificacion.verificar_productos_especificos(productos_ids)
         
         if productos_bajos:
-            mensaje = "⚠️ ALERTA: Productos con stock bajo\n\n"
+            mensaje = "⚠️ ALERTA: Los siguientes productos quedaron con stock bajo\n\n"
             for p in productos_bajos[:5]:
-                mensaje += f"• {p['nombre']}: {p['stock']} (mínimo: {p['stock_minimo']})\n"
+                mensaje += f"• {p['nombre']}: {p['stock']} (mínimo: {p['stock_minimo']}) - Faltan {p['faltante']}\n"
             
             if len(productos_bajos) > 5:
                 mensaje += f"\n... y {len(productos_bajos) - 5} más"

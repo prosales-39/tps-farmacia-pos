@@ -25,7 +25,7 @@ class MainWindow:
         
         # Capturar evento de cierre para backup automático
         self.root.protocol("WM_DELETE_WINDOW", self.cerrar_aplicacion)
-        
+        self.root.usuario_actual = self.usuario
         self.root.mainloop()
 
     def es_admin(self):
@@ -89,24 +89,39 @@ class MainWindow:
         from views.backup import BackupView
         BackupView(self.contenido)
 
-    def mostrar_notificacion_stock(self):
-        """Muestra una notificación si hay productos con stock bajo."""
-        from tkinter import messagebox
+    def mostrar_logs(self):
+        if not self.es_admin():
+            return
+        self.limpiar_contenido()
+        from views.logs import LogsView
+        LogsView(self.contenido)
+
+def mostrar_notificacion_stock(self):
+    """Muestra una notificación si hay productos con stock bajo."""
+    from tkinter import messagebox
+    from models.notificacion import Notificacion
+    
+    productos_bajos = Notificacion.verificar_stock_bajo()
+    
+    if productos_bajos:
+        # Verificar si algún producto está críticamente bajo (stock = 0)
+        criticos = [p for p in productos_bajos if p["stock"] == 0]
         
-        productos_bajos = Notificacion.verificar_stock_bajo()
-        
-        if productos_bajos:
+        if criticos:
+            mensaje = "🚨 ¡URGENTE! Productos sin stock\n\n"
+            for p in criticos[:5]:
+                mensaje += f"• {p['nombre']}: AGOTADO (mínimo: {p['stock_minimo']})\n"
+        else:
             mensaje = "⚠️ ALERTA DE STOCK BAJO\n\n"
             mensaje += "Los siguientes productos están por debajo del mínimo:\n\n"
-            
             for p in productos_bajos[:10]:
                 mensaje += f"• {p['nombre']}: {p['stock']} / {p['stock_minimo']} (faltan {p['faltante']})\n"
-            
-            if len(productos_bajos) > 10:
-                mensaje += f"\n... y {len(productos_bajos) - 10} más"
-            
-            messagebox.showwarning("⚠️ Stock Bajo", mensaje)
-
+        
+        if len(productos_bajos) > 10:
+            mensaje += f"\n... y {len(productos_bajos) - 10} más"
+        
+        messagebox.showwarning("⚠️ Stock Bajo", mensaje)
+        
     def cerrar_aplicacion(self):
         """Realiza backup automático al cerrar la aplicación."""
         try:
@@ -179,6 +194,7 @@ class MainWindow:
                 "🚚 Compras": self.mostrar_compras,
                 "👥 Usuarios": self.mostrar_usuarios,
                 "📦 Proveedores": self.mostrar_proveedores,
+                "📋 Logs": self.mostrar_logs,
                 "💾 Backup": self.mostrar_backup,
             }
 

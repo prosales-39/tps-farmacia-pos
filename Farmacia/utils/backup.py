@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import messagebox, filedialog
+from utils.logger import Logger
 
 class BackupManager:
     """Gestor de copias de seguridad de la base de datos."""
@@ -34,7 +35,7 @@ class BackupManager:
 
         # Copiar archivo
         shutil.copy2(cls.DB_PATH, backup_path)
-
+        Logger.registrar_backup(str(backup_path))
         return backup_path
 
     @classmethod

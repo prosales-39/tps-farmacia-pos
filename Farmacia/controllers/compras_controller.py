@@ -1,6 +1,7 @@
 from models.compra import Compra
 from models.detalle_compra import DetalleCompra
 from models.producto import Producto
+from utils.logger import Logger
 
 class ComprasController:
 
@@ -24,6 +25,12 @@ class ComprasController:
             DetalleCompra.crear(compra_id, item["producto_id"], item["cantidad"], item["precio_unitario"])
             Producto.aumentar_stock(item["producto_id"], item["cantidad"])
 
+        Logger.registrar_compra(
+            compra_id=compra_id,
+            usuario_id=usuario_id,
+            proveedor_id=proveedor_id,
+            total=total
+        )
         return compra_id
 
     @staticmethod

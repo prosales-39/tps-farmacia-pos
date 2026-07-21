@@ -3,6 +3,7 @@ from tkinter import messagebox
 from controllers.login_controller import LoginController
 from views.main_window import MainWindow
 import os
+from utils.logger import Logger
 
 try:
     from PIL import Image, ImageTk
@@ -129,6 +130,18 @@ class Login:
             return
 
         datos = LoginController.autenticar(usuario, password)
+
+        if datos is None:
+            # Log de intento fallido
+            Logger.warning(f"Intento de login fallido - Usuario: {usuario}")
+            messagebox.showerror("Error", "Credenciales incorrectas")
+            return
+
+        # Log de login exitoso
+        Logger.registrar_login(
+            usuario_id=datos["id"],
+            usuario_nombre=datos["nombre"]
+        )
 
         if datos is None:
             messagebox.showerror("Error", "Credenciales incorrectas")

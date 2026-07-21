@@ -3,6 +3,7 @@ from models.detalle_venta import DetalleVenta
 from models.producto import Producto
 from models.cliente import Cliente
 from models.factura import Factura
+from utils.logger import Logger
 
 class VentasController:
 
@@ -43,6 +44,13 @@ class VentasController:
             total=total,
             cliente_nombre=cliente["nombre"] if cliente else "Cliente Mostrador",
             cliente_documento=cliente["documento"] if cliente else "00000000"
+        )
+
+        Logger.registrar_venta(
+            venta_id=venta_id,
+            usuario_id=usuario_id,
+            total=total,
+            productos=len(carrito)
         )
 
         return venta_id, factura_id, numero_factura
