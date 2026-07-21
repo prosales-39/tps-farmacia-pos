@@ -96,7 +96,8 @@ class InventarioView:
             ("➕ Nuevo", self.nuevo_producto),
             ("✏️ Editar", self.editar_producto),
             ("🗑️ Eliminar", self.eliminar_producto),
-            ("🔄 Actualizar", self.cargar_tabla)
+            ("🔄 Actualizar", self.cargar_tabla),
+            ("📥 Exportar Excel", self.exportar_excel)
         ]
 
         for texto, comando in botones:
@@ -189,3 +190,40 @@ class InventarioView:
                 messagebox.showinfo("Éxito", "Producto eliminado correctamente.")
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo eliminar: {e}")
+
+    def exportar_excel(self):
+        """Exporta los datos de la tabla visible a un archivo XLSX."""
+        try:
+            import openpyxl
+            from tkinter import filedialog
+            from datetime import datetime
+
+            archivo = filedialog.asksaveasfilename(
+                defaultextension=".xlsx",
+                filetypes=[("Archivos Excel", "*.xlsx"), ("Todos los archivos", "*.*")],
+                initialfile=f"inventario_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            )
+
+            if not archivo:
+                return
+
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Inventario"
+
+            # Escribir encabezados
+            columnas = [self.tabla.heading(col)["text"] for col in self.tabla["columns"]]
+            ws.append(columnas)
+
+            # Escribir datos
+            for item in self.tabla.get_children():
+                valores = self.tabla.item(item)["values"]
+                ws.append(valores)
+
+            wb.save(archivo)
+            messagebox.showinfo("Exportación exitosa", f"Archivo guardado en:\n{archivo}")
+
+        except ImportError:
+            messagebox.showerror("Error de dependencia", "La librería 'openpyxl' no está instalada.\nEjecute: pip install openpyxl")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo exportar: {e}")

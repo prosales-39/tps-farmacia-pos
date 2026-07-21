@@ -8,7 +8,7 @@ class ComprasView:
     def __init__(self, contenedor, usuario_id):
         self.contenedor = contenedor
         self.usuario_id = usuario_id
-        self.carrito = []  # lista de dicts con producto_id, nombre, cantidad, precio_unitario
+        self.carrito = []
         self.total = 0.0
         self.proveedor_id = None
 
@@ -17,7 +17,6 @@ class ComprasView:
         self.buscar_productos()
 
     def crear_interfaz(self):
-        # Título
         tk.Label(
             self.contenedor,
             text="🚚 Compras",
@@ -26,15 +25,12 @@ class ComprasView:
             fg="#1565C0"
         ).pack(pady=(10, 5))
 
-        # Panel principal: izquierda (productos) y derecha (carrito)
         panel_principal = tk.Frame(self.contenedor, bg="white")
         panel_principal.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # --- Panel izquierdo: búsqueda, lista de productos y proveedor ---
         panel_izq = tk.Frame(panel_principal, bg="white", width=500)
         panel_izq.pack(side="left", fill="both", expand=True, padx=(0, 5))
 
-        # Selección de proveedor
         frame_proveedor = tk.Frame(panel_izq, bg="white")
         frame_proveedor.pack(fill="x", pady=5)
 
@@ -43,7 +39,6 @@ class ComprasView:
         self.combo_proveedor.pack(side="left", padx=5)
         self.combo_proveedor.bind("<<ComboboxSelected>>", self.on_proveedor_seleccionado)
 
-        # Búsqueda de productos
         frame_buscar = tk.Frame(panel_izq, bg="white")
         frame_buscar.pack(fill="x", pady=5)
 
@@ -60,7 +55,6 @@ class ComprasView:
             relief="flat"
         ).pack(side="left", padx=5)
 
-        # Treeview de productos disponibles
         self.tree_productos = ttk.Treeview(
             panel_izq,
             columns=("codigo", "nombre", "stock", "precio"),
@@ -77,7 +71,6 @@ class ComprasView:
         self.tree_productos.column("precio", width=80)
         self.tree_productos.pack(fill="both", expand=True, pady=5)
 
-        # Botón agregar al carrito
         btn_agregar = tk.Button(
             panel_izq,
             text="Agregar al carrito",
@@ -89,13 +82,11 @@ class ComprasView:
         )
         btn_agregar.pack(pady=5)
 
-        # --- Panel derecho: carrito ---
         panel_der = tk.Frame(panel_principal, bg="white", width=400)
         panel_der.pack(side="right", fill="both", expand=True, padx=(5, 0))
 
         tk.Label(panel_der, text="Carrito de compra", font=("Segoe UI", 12, "bold"), bg="white").pack(pady=5)
 
-        # Treeview del carrito
         self.tree_carrito = ttk.Treeview(
             panel_der,
             columns=("producto", "cantidad", "precio", "subtotal"),
@@ -112,7 +103,6 @@ class ComprasView:
         self.tree_carrito.column("subtotal", width=80)
         self.tree_carrito.pack(fill="both", expand=True, pady=5)
 
-        # Botón eliminar del carrito
         btn_eliminar = tk.Button(
             panel_der,
             text="Eliminar seleccionado",
@@ -123,7 +113,6 @@ class ComprasView:
         )
         btn_eliminar.pack(pady=5)
 
-        # Totales
         frame_totales = tk.Frame(panel_der, bg="white")
         frame_totales.pack(fill="x", pady=10)
 
@@ -136,7 +125,6 @@ class ComprasView:
         )
         self.label_total.pack(anchor="e")
 
-        # Botón finalizar compra
         btn_finalizar = tk.Button(
             panel_der,
             text="Registrar compra",
@@ -159,7 +147,6 @@ class ComprasView:
             )
             return
 
-        # Guardar mapeo ID -> nombre
         self.proveedores_map = {p["id"]: p["nombre"] for p in proveedores}
         self.combo_proveedor["values"] = list(self.proveedores_map.values())
         if self.proveedores_map:
@@ -209,7 +196,6 @@ class ComprasView:
         precio_str = item["values"][3].replace("$", "").replace(".", "")
         precio = float(precio_str)
 
-        # Pedir cantidad
         ventana_cant = tk.Toplevel(self.contenedor)
         ventana_cant.title("Cantidad")
         ventana_cant.geometry("250x150")
@@ -227,7 +213,6 @@ class ComprasView:
                 cant = int(entry_cant.get())
                 if cant <= 0:
                     raise ValueError
-                # Agregar al carrito
                 for item_carrito in self.carrito:
                     if item_carrito["producto_id"] == producto_id:
                         item_carrito["cantidad"] += cant
@@ -310,6 +295,6 @@ class ComprasView:
             messagebox.showinfo("Compra registrada", f"Compra #{compra_id} realizada con éxito.")
             self.carrito.clear()
             self.actualizar_carrito()
-            self.buscar_productos()  # Actualizar stock
+            self.buscar_productos()
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo completar la compra: {e}")
