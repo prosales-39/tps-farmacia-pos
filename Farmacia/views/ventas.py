@@ -24,11 +24,11 @@ class VentasView:
             fg="#1565C0"
         ).pack(pady=(10, 5))
 
-        # Panel principal: izquierda (productos) y derecha (carrito)
+        # Panel principal
         panel_principal = tk.Frame(self.contenedor, bg="white")
         panel_principal.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # --- Panel izquierdo: búsqueda y lista de productos ---
+        # --- Panel izquierdo ---
         panel_izq = tk.Frame(panel_principal, bg="white", width=500)
         panel_izq.pack(side="left", fill="both", expand=True, padx=(0, 5))
 
@@ -77,13 +77,15 @@ class VentasView:
         )
         btn_agregar.pack(pady=5)
 
-        # --- Panel derecho: carrito ---
+        # --- Panel derecho (carrito) ---
         panel_der = tk.Frame(panel_principal, bg="white", width=400)
         panel_der.pack(side="right", fill="both", expand=True, padx=(5, 0))
+        # Fijar ancho mínimo
+        panel_der.pack_propagate(False)
+        panel_der.config(width=400)
 
         tk.Label(panel_der, text="Carrito de venta", font=("Segoe UI", 12, "bold"), bg="white").pack(pady=5)
 
-        # Treeview del carrito
         self.tree_carrito = ttk.Treeview(
             panel_der,
             columns=("producto", "cantidad", "precio", "subtotal"),
@@ -100,7 +102,7 @@ class VentasView:
         self.tree_carrito.column("subtotal", width=80)
         self.tree_carrito.pack(fill="both", expand=True, pady=5)
 
-        # Botón eliminar del carrito
+        # Botón eliminar
         btn_eliminar = tk.Button(
             panel_der,
             text="Eliminar seleccionado",
@@ -111,16 +113,14 @@ class VentasView:
         )
         btn_eliminar.pack(pady=5)
 
-        # Totales
+        # Totales (sin IVA)
         frame_totales = tk.Frame(panel_der, bg="white")
         frame_totales.pack(fill="x", pady=10)
 
         self.label_subtotal = tk.Label(frame_totales, text="Subtotal: $0", font=("Segoe UI", 11), bg="white")
         self.label_subtotal.pack(anchor="e")
 
-        self.label_iva = tk.Label(frame_totales, text="IVA (19%): $0", font=("Segoe UI", 11), bg="white")
-        self.label_iva.pack(anchor="e")
-
+        # self.label_iva ELIMINADO
         self.label_total = tk.Label(frame_totales, text="Total: $0", font=("Segoe UI", 14, "bold"), fg="#1565C0", bg="white")
         self.label_total.pack(anchor="e")
 
@@ -141,7 +141,6 @@ class VentasView:
     def buscar_productos(self):
         termino = self.entry_busqueda.get().strip()
         productos = VentasController.obtener_productos_para_venta(termino)
-        # Limpiar tree
         for item in self.tree_productos.get_children():
             self.tree_productos.delete(item)
         for p in productos:
@@ -152,6 +151,20 @@ class VentasView:
                 tags=(p["id"],)
             )
 
+    def centrar_ventana(self, ventana):
+        """Centra una ventana Toplevel respecto a la ventana principal."""
+        ventana.update_idletasks()
+        ancho = ventana.winfo_width()
+        alto = ventana.winfo_height()
+        root = ventana.master.winfo_toplevel()
+        x_root = root.winfo_x()
+        y_root = root.winfo_y()
+        ancho_root = root.winfo_width()
+        alto_root = root.winfo_height()
+        x = x_root + (ancho_root // 2) - (ancho // 2)
+        y = y_root + (alto_root // 2) - (alto // 2)
+        ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
+
     def agregar_al_carrito(self):
         seleccion = self.tree_productos.selection()
         if not seleccion:
@@ -159,24 +172,54 @@ class VentasView:
             return
         item = self.tree_productos.item(seleccion[0])
         producto_id = item["tags"][0]
-        codigo = item["values"][0]
         nombre = item["values"][1]
         stock = item["values"][2]
         precio_str = item["values"][3].replace("$", "").replace(".", "")
         precio = float(precio_str)
 
-        # Pedir cantidad
+        # Ventana emergente centrada y con estilo
         ventana_cant = tk.Toplevel(self.contenedor)
         ventana_cant.title("Cantidad")
-        ventana_cant.geometry("250x150")
+        ventana_cant.geometry("300x220")
         ventana_cant.resizable(False, False)
+        ventana_cant.configure(bg="#f0f2f5")
         ventana_cant.grab_set()
+        self.centrar_ventana(ventana_cant)
 
-        tk.Label(ventana_cant, text=f"Producto: {nombre}", font=("Segoe UI", 10)).pack(pady=5)
-        tk.Label(ventana_cant, text=f"Stock disponible: {stock}").pack()
-        tk.Label(ventana_cant, text="Cantidad:").pack(pady=5)
-        entry_cant = tk.Entry(ventana_cant, width=10)
-        entry_cant.pack()
+        tk.Label(
+            ventana_cant,
+            text=f"Producto: {nombre}",
+            font=("Segoe UI", 11, "bold"),
+            bg="#f0f2f5",
+            fg="#1a237e"
+        ).pack(pady=(15, 5))
+
+        tk.Label(
+            ventana_cant,
+            text=f"Stock disponible: {stock}",
+            font=("Segoe UI", 10),
+            bg="#f0f2f5",
+            fg="#555"
+        ).pack()
+
+        tk.Label(
+            ventana_cant,
+            text="Cantidad:",
+            font=("Segoe UI", 10),
+            bg="#f0f2f5"
+        ).pack(pady=(10, 2))
+
+        entry_cant = tk.Entry(
+            ventana_cant,
+            font=("Segoe UI", 11),
+            width=10,
+            justify="center",
+            relief="flat",
+            highlightthickness=1,
+            highlightcolor="#1a237e"
+        )
+        entry_cant.pack(pady=5)
+        entry_cant.focus_set()
 
         def confirmar():
             try:
@@ -187,14 +230,12 @@ class VentasView:
                     messagebox.showerror("Error", "Cantidad excede el stock disponible")
                     return
                 # Agregar al carrito
-                # Si ya existe, sumar cantidad
                 for item_carrito in self.carrito:
                     if item_carrito["producto_id"] == producto_id:
                         item_carrito["cantidad"] += cant
                         self.actualizar_carrito()
                         ventana_cant.destroy()
                         return
-                # Nuevo item
                 self.carrito.append({
                     "producto_id": producto_id,
                     "nombre": nombre,
@@ -206,16 +247,50 @@ class VentasView:
             except ValueError:
                 messagebox.showerror("Error", "Ingrese un número válido")
 
-        tk.Button(ventana_cant, text="Aceptar", command=confirmar, bg="#43A047", fg="white").pack(pady=10)
+        # Botones con estilo
+        frame_botones = tk.Frame(ventana_cant, bg="#f0f2f5")
+        frame_botones.pack(pady=15)
+
+        btn_aceptar = tk.Button(
+            frame_botones,
+            text="Aceptar",
+            command=confirmar,
+            bg="#43A047",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            relief="flat",
+            padx=15,
+            pady=5,
+            cursor="hand2"
+        )
+        btn_aceptar.pack(side="left", padx=10)
+        btn_aceptar.bind("<Enter>", lambda e: btn_aceptar.config(bg="#2e7d32"))
+        btn_aceptar.bind("<Leave>", lambda e: btn_aceptar.config(bg="#43A047"))
+
+        btn_cancelar = tk.Button(
+            frame_botones,
+            text="Cancelar",
+            command=ventana_cant.destroy,
+            bg="#78909C",
+            fg="white",
+            font=("Segoe UI", 10),
+            relief="flat",
+            padx=15,
+            pady=5,
+            cursor="hand2"
+        )
+        btn_cancelar.pack(side="left", padx=10)
+        btn_cancelar.bind("<Enter>", lambda e: btn_cancelar.config(bg="#546e7a"))
+        btn_cancelar.bind("<Leave>", lambda e: btn_cancelar.config(bg="#78909C"))
+
+        ventana_cant.bind("<Return>", lambda event: confirmar())
 
     def eliminar_del_carrito(self):
         seleccion = self.tree_carrito.selection()
         if not seleccion:
             messagebox.showwarning("Seleccionar", "Seleccione un item del carrito")
             return
-        # Obtener índice según selección
         item = self.tree_carrito.item(seleccion[0])
-        # Buscar en el carrito por nombre y precio (asumiendo que es único)
         nombre = item["values"][0]
         precio = float(item["values"][2].replace("$", "").replace(".", ""))
         for i, car in enumerate(self.carrito):
@@ -225,7 +300,6 @@ class VentasView:
         self.actualizar_carrito()
 
     def actualizar_carrito(self):
-        # Limpiar tree carrito
         for item in self.tree_carrito.get_children():
             self.tree_carrito.delete(item)
 
@@ -244,10 +318,10 @@ class VentasView:
                 )
             )
 
-        iva = subtotal * 0.19
-        total = subtotal + iva
+        # Sin IVA: total = subtotal
+        total = subtotal
         self.label_subtotal.config(text=f"Subtotal: {formatear_precio(subtotal)}")
-        self.label_iva.config(text=f"IVA (19%): {formatear_precio(iva)}")
+        # self.label_iva ya no existe
         self.label_total.config(text=f"Total: {formatear_precio(total)}")
 
     def finalizar_venta(self):
@@ -255,12 +329,10 @@ class VentasView:
             messagebox.showwarning("Carrito vacío", "No hay productos en el carrito")
             return
 
-        # Confirmar
         if not messagebox.askyesno("Confirmar venta", "¿Registrar esta venta?"):
             return
 
         try:
-            # Preparar datos para el controlador
             items = []
             for item in self.carrito:
                 items.append({
@@ -270,10 +342,8 @@ class VentasView:
                 })
             venta_id = VentasController.realizar_venta(self.usuario_id, items)
             messagebox.showinfo("Venta registrada", f"Venta #{venta_id} realizada con éxito.")
-            # Limpiar carrito
             self.carrito.clear()
             self.actualizar_carrito()
-            # Refrescar lista de productos (stock actualizado)
             self.buscar_productos()
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo completar la venta: {e}")
