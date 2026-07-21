@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from controllers.compras_controller import ComprasController
 from utils.helpers import formatear_precio
+from utils.comprobante_compra import ComprobanteCompra
 
 class ComprasView:
 
@@ -89,15 +90,17 @@ class ComprasView:
 
         self.tree_carrito = ttk.Treeview(
             panel_der,
-            columns=("producto", "cantidad", "precio", "subtotal"),
+            columns=("producto", "lote", "cantidad", "precio", "subtotal"),
             show="headings",
             height=12
         )
         self.tree_carrito.heading("producto", text="Producto")
+        self.tree_carrito.heading("lote", text="Lote")
         self.tree_carrito.heading("cantidad", text="Cant.")
         self.tree_carrito.heading("precio", text="Precio")
         self.tree_carrito.heading("subtotal", text="Subtotal")
-        self.tree_carrito.column("producto", width=120)
+        self.tree_carrito.column("producto", width=100)
+        self.tree_carrito.column("lote", width=100)
         self.tree_carrito.column("cantidad", width=60)
         self.tree_carrito.column("precio", width=80)
         self.tree_carrito.column("subtotal", width=80)
@@ -113,6 +116,37 @@ class ComprasView:
         )
         btn_eliminar.pack(pady=5)
 
+        # Frame para botones de acción
+        frame_botones = tk.Frame(panel_der, bg="white")
+        frame_botones.pack(fill="x", pady=5)
+
+        btn_finalizar = tk.Button(
+            frame_botones,
+            text="Registrar compra",
+            command=self.finalizar_compra,
+            bg="#1565C0",
+            fg="white",
+            font=("Segoe UI", 11, "bold"),
+            relief="flat",
+            padx=15,
+            pady=8
+        )
+        btn_finalizar.pack(side="left", padx=5)
+
+        # ✅ BOTÓN VER COMPROBANTES
+        btn_ver_comprobantes = tk.Button(
+            frame_botones,
+            text="📂 Ver Comprobantes",
+            command=self.ver_comprobantes,
+            bg="#78909C",
+            fg="white",
+            font=("Segoe UI", 11, "bold"),
+            relief="flat",
+            padx=15,
+            pady=8
+        )
+        btn_ver_comprobantes.pack(side="left", padx=5)
+
         frame_totales = tk.Frame(panel_der, bg="white")
         frame_totales.pack(fill="x", pady=10)
 
@@ -124,19 +158,6 @@ class ComprasView:
             bg="white"
         )
         self.label_total.pack(anchor="e")
-
-        btn_finalizar = tk.Button(
-            panel_der,
-            text="Registrar compra",
-            command=self.finalizar_compra,
-            bg="#1565C0",
-            fg="white",
-            font=("Segoe UI", 12, "bold"),
-            relief="flat",
-            padx=20,
-            pady=8
-        )
-        btn_finalizar.pack(pady=10)
 
     def cargar_proveedores(self):
         proveedores = ComprasController.obtener_proveedores()
@@ -196,41 +217,90 @@ class ComprasView:
         precio_str = item["values"][3].replace("$", "").replace(".", "")
         precio = float(precio_str)
 
-        ventana_cant = tk.Toplevel(self.contenedor)
-        ventana_cant.title("Cantidad")
-        ventana_cant.geometry("250x150")
-        ventana_cant.resizable(False, False)
-        ventana_cant.grab_set()
+        # Ventana con cantidad y lote
+        ventana = tk.Toplevel(self.contenedor)
+        ventana.title("Agregar producto")
+        ventana.geometry("350x280")
+        ventana.resizable(False, False)
+        ventana.grab_set()
 
-        tk.Label(ventana_cant, text=f"Producto: {nombre}", font=("Segoe UI", 10)).pack(pady=5)
-        tk.Label(ventana_cant, text=f"Stock actual: {stock}").pack()
-        tk.Label(ventana_cant, text="Cantidad a comprar:").pack(pady=5)
-        entry_cant = tk.Entry(ventana_cant, width=10)
-        entry_cant.pack()
+        tk.Label(ventana, text=f"Producto: {nombre}", font=("Segoe UI", 11, "bold")).pack(pady=(10, 5))
+        tk.Label(ventana, text=f"Stock actual: {stock}").pack()
+        tk.Label(ventana, text="Cantidad a comprar:").pack(pady=(10, 2))
+        entry_cant = tk.Entry(ventana, width=10)
+        entry_cant.pack(pady=5)
+
+        tk.Label(ventana, text="Número de Lote:").pack(pady=(5, 2))
+        entry_lote = tk.Entry(ventana, width=25)
+        entry_lote.pack(pady=5)
+        
+        # Botón para generar lote automático
+        tk.Button(
+            ventana,
+            text="🔀 Generar Lote",
+            command=lambda: entry_lote.insert(0, self.generar_numero_lote()),
+            bg="#E3F2FD",
+            fg="#0D47A1",
+            relief="flat",
+            padx=10
+        ).pack(pady=5)
 
         def confirmar():
             try:
                 cant = int(entry_cant.get())
                 if cant <= 0:
                     raise ValueError
+                lote = entry_lote.get().strip()
+                if not lote:
+                    lote = self.generar_numero_lote()
+                
                 for item_carrito in self.carrito:
                     if item_carrito["producto_id"] == producto_id:
                         item_carrito["cantidad"] += cant
                         self.actualizar_carrito()
-                        ventana_cant.destroy()
+                        ventana.destroy()
                         return
                 self.carrito.append({
                     "producto_id": producto_id,
                     "nombre": nombre,
                     "cantidad": cant,
-                    "precio_unitario": precio
+                    "precio_unitario": precio,
+                    "lote": lote
                 })
                 self.actualizar_carrito()
-                ventana_cant.destroy()
+                ventana.destroy()
             except ValueError:
                 messagebox.showerror("Error", "Ingrese un número válido")
 
-        tk.Button(ventana_cant, text="Aceptar", command=confirmar, bg="#43A047", fg="white").pack(pady=10)
+        tk.Button(
+            ventana,
+            text="Aceptar",
+            command=confirmar,
+            bg="#43A047",
+            fg="white",
+            relief="flat",
+            padx=20,
+            pady=5
+        ).pack(pady=10)
+
+        tk.Button(
+            ventana,
+            text="Cancelar",
+            command=ventana.destroy,
+            bg="#78909C",
+            fg="white",
+            relief="flat",
+            padx=20,
+            pady=5
+        ).pack(pady=5)
+
+    def generar_numero_lote(self):
+        """Genera un número de lote automático."""
+        from datetime import datetime
+        import random
+        fecha = datetime.now().strftime("%Y%m%d")
+        aleatorio = random.randint(1000, 9999)
+        return f"LOTE-{fecha}-{aleatorio}"
 
     def eliminar_del_carrito(self):
         seleccion = self.tree_carrito.selection()
@@ -239,7 +309,7 @@ class ComprasView:
             return
         item = self.tree_carrito.item(seleccion[0])
         nombre = item["values"][0]
-        precio = float(item["values"][2].replace("$", "").replace(".", ""))
+        precio = float(item["values"][3].replace("$", "").replace(".", ""))
         for i, car in enumerate(self.carrito):
             if car["nombre"] == nombre and car["precio_unitario"] == precio:
                 del self.carrito[i]
@@ -259,6 +329,7 @@ class ComprasView:
                 "end",
                 values=(
                     item["nombre"],
+                    item["lote"] or "N/A",
                     item["cantidad"],
                     formatear_precio(item["precio_unitario"]),
                     formatear_precio(sub)
@@ -266,7 +337,7 @@ class ComprasView:
             )
 
         self.label_total.config(text=f"Total: {formatear_precio(total)}")
-
+        
     def finalizar_compra(self):
         if not self.carrito:
             messagebox.showwarning("Carrito vacío", "No hay productos en el carrito")
@@ -285,16 +356,55 @@ class ComprasView:
                 items.append({
                     "producto_id": item["producto_id"],
                     "cantidad": item["cantidad"],
-                    "precio_unitario": item["precio_unitario"]
+                    "precio_unitario": item["precio_unitario"],
+                    "lote": item.get("lote", "")
                 })
             compra_id = ComprasController.realizar_compra(
                 self.usuario_id,
                 self.proveedor_id,
                 items
             )
-            messagebox.showinfo("Compra registrada", f"Compra #{compra_id} realizada con éxito.")
+            
+            # Generar comprobante
+            from models.compra import Compra
+            compra = Compra.obtener_por_id(compra_id)
+            self.generar_comprobante(compra, items)
+            
+            messagebox.showinfo(
+                "Compra registrada", 
+                f"✅ Compra #{compra_id} realizada con éxito.\n"
+                f"📄 Comprobante generado en carpeta 'comprobantes/'"
+            )
+            
             self.carrito.clear()
             self.actualizar_carrito()
             self.buscar_productos()
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo completar la compra: {e}")
+
+    def generar_comprobante(self, compra, items):
+        """Genera el comprobante de compra en PDF."""
+        try:
+            from models.proveedor import Proveedor
+            proveedor = Proveedor.obtener_por_id(self.proveedor_id)
+            usuario = {"id": self.usuario_id, "nombre": "Usuario"}
+            
+            # Obtener nombres de productos
+            from models.producto import Producto
+            for item in items:
+                producto = Producto.obtener_por_id(item["producto_id"])
+                item["nombre"] = producto["nombre"] if producto else "Producto desconocido"
+            
+            ruta = ComprobanteCompra.generar(compra, items, proveedor, usuario)
+            print(f"📄 Comprobante generado: {ruta}")
+        except Exception as e:
+            print(f"⚠️ Error al generar comprobante: {e}")
+
+    def ver_comprobantes(self):
+        """Abre la carpeta de comprobantes."""
+        import os
+        comprobantes_dir = "comprobantes"
+        if os.path.exists(comprobantes_dir):
+            os.startfile(comprobantes_dir)
+        else:
+            messagebox.showwarning("No encontrado", "No hay comprobantes generados aún.")

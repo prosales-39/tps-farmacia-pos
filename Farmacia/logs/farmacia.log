@@ -2,3 +2,10 @@
 2026-07-21 10:26:37 - INFO - [1] VENTA #3 - Usuario: 1 - Total: $16,660 - Productos: 1
 2026-07-21 10:27:42 - INFO - [1] VENTA #4 - Usuario: 1 - Total: $5,950 - Productos: 1
 2026-07-21 10:28:52 - INFO - BACKUP - Archivo: backups\farmacia_backup_20260721_102852.db
+2026-07-21 11:15:15 - INFO - [1] LOGIN - Usuario: Administrador General (ID: 1)
+2026-07-21 11:16:20 - INFO - [1] LOGIN - Usuario: Administrador General (ID: 1)
+2026-07-21 11:18:37 - INFO - BACKUP - Archivo: backups\farmacia_backup_20260721_111837.db
+2026-07-21 11:19:49 - INFO - [1] LOGIN - Usuario: Administrador General (ID: 1)
+2026-07-21 11:21:02 - INFO - BACKUP - Archivo: backups\farmacia_backup_20260721_112102.db
+2026-07-21 11:23:56 - INFO - [1] LOGIN - Usuario: Administrador General (ID: 1)
+2026-07-21 11:24:07 - INFO - BACKUP - Archivo: backups\farmacia_backup_20260721_112407.db

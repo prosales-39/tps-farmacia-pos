@@ -20,12 +20,15 @@ class MainWindow:
         self.root.geometry("1200x700")
         self.root.configure(bg="#ECECEC")
 
+        # Guardar usuario actual para que otras vistas lo consulten
+        self.root.usuario_actual = self.usuario
+
         self.crear_interfaz()
         self.mostrar_notificacion_stock()
         
         # Capturar evento de cierre para backup automático
         self.root.protocol("WM_DELETE_WINDOW", self.cerrar_aplicacion)
-        self.root.usuario_actual = self.usuario
+        
         self.root.mainloop()
 
     def es_admin(self):
@@ -96,32 +99,32 @@ class MainWindow:
         from views.logs import LogsView
         LogsView(self.contenido)
 
-def mostrar_notificacion_stock(self):
-    """Muestra una notificación si hay productos con stock bajo."""
-    from tkinter import messagebox
-    from models.notificacion import Notificacion
-    
-    productos_bajos = Notificacion.verificar_stock_bajo()
-    
-    if productos_bajos:
-        # Verificar si algún producto está críticamente bajo (stock = 0)
-        criticos = [p for p in productos_bajos if p["stock"] == 0]
+    def mostrar_notificacion_stock(self):
+        """Muestra una notificación si hay productos con stock bajo."""
+        from tkinter import messagebox
+        from models.notificacion import Notificacion
         
-        if criticos:
-            mensaje = "🚨 ¡URGENTE! Productos sin stock\n\n"
-            for p in criticos[:5]:
-                mensaje += f"• {p['nombre']}: AGOTADO (mínimo: {p['stock_minimo']})\n"
-        else:
-            mensaje = "⚠️ ALERTA DE STOCK BAJO\n\n"
-            mensaje += "Los siguientes productos están por debajo del mínimo:\n\n"
-            for p in productos_bajos[:10]:
-                mensaje += f"• {p['nombre']}: {p['stock']} / {p['stock_minimo']} (faltan {p['faltante']})\n"
+        productos_bajos = Notificacion.verificar_stock_bajo()
         
-        if len(productos_bajos) > 10:
-            mensaje += f"\n... y {len(productos_bajos) - 10} más"
-        
-        messagebox.showwarning("⚠️ Stock Bajo", mensaje)
-        
+        if productos_bajos:
+            # Verificar si algún producto está críticamente bajo (stock = 0)
+            criticos = [p for p in productos_bajos if p["stock"] == 0]
+            
+            if criticos:
+                mensaje = "🚨 ¡URGENTE! Productos sin stock\n\n"
+                for p in criticos[:5]:
+                    mensaje += f"• {p['nombre']}: AGOTADO (mínimo: {p['stock_minimo']})\n"
+            else:
+                mensaje = "⚠️ ALERTA DE STOCK BAJO\n\n"
+                mensaje += "Los siguientes productos están por debajo del mínimo:\n\n"
+                for p in productos_bajos[:10]:
+                    mensaje += f"• {p['nombre']}: {p['stock']} / {p['stock_minimo']} (faltan {p['faltante']})\n"
+            
+            if len(productos_bajos) > 10:
+                mensaje += f"\n... y {len(productos_bajos) - 10} más"
+            
+            messagebox.showwarning("⚠️ Stock Bajo", mensaje)
+
     def cerrar_aplicacion(self):
         """Realiza backup automático al cerrar la aplicación."""
         try:
@@ -204,7 +207,7 @@ def mostrar_notificacion_stock(self):
                     text=texto,
                     command=comando,
                     relief="flat",
-                    bg="#1a237e",  # Color diferente para opciones de admin
+                    bg="#1a237e",
                     fg="white",
                     activebackground="#283593",
                     activeforeground="white",

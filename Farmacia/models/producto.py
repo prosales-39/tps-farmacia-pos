@@ -128,3 +128,15 @@ class Producto:
         """, (cantidad, producto_id))
         conexion.commit()
         conexion.close()
+    @staticmethod
+    def actualizar_lote(producto_id, lote):
+        """Actualiza el lote de un producto."""
+        conexion = get_connection()
+        cursor = conexion.cursor()
+        cursor.execute("""
+            UPDATE productos
+            SET lote = ?
+            WHERE id = ?
+        """, (lote, producto_id))
+        conexion.commit()
+        conexion.close()

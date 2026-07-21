@@ -8,8 +8,7 @@ class ComprasController:
     @staticmethod
     def realizar_compra(usuario_id, proveedor_id, carrito):
         """
-        carrito: lista de diccionarios con producto_id, cantidad, precio_unitario
-        Retorna el ID de la compra creada.
+        carrito: lista de diccionarios con producto_id, cantidad, precio_unitario, lote
         """
         if not carrito:
             raise ValueError("El carrito está vacío")
@@ -23,14 +22,11 @@ class ComprasController:
         # Crear detalles y aumentar stock
         for item in carrito:
             DetalleCompra.crear(compra_id, item["producto_id"], item["cantidad"], item["precio_unitario"])
+            # Actualizar producto con lote
+            if item.get("lote"):
+                Producto.actualizar_lote(item["producto_id"], item["lote"])
             Producto.aumentar_stock(item["producto_id"], item["cantidad"])
 
-        Logger.registrar_compra(
-            compra_id=compra_id,
-            usuario_id=usuario_id,
-            proveedor_id=proveedor_id,
-            total=total
-        )
         return compra_id
 
     @staticmethod
