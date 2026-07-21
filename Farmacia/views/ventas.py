@@ -8,7 +8,7 @@ class VentasView:
     def __init__(self, contenedor, usuario_id):
         self.contenedor = contenedor
         self.usuario_id = usuario_id
-        self.carrito = []  # lista de dicts con producto_id, nombre, cantidad, precio_unitario
+        self.carrito = []
         self.total = 0.0
 
         self.crear_interfaz()
@@ -80,7 +80,6 @@ class VentasView:
         # --- Panel derecho (carrito) ---
         panel_der = tk.Frame(panel_principal, bg="white", width=400)
         panel_der.pack(side="right", fill="both", expand=True, padx=(5, 0))
-        # Fijar ancho mínimo
         panel_der.pack_propagate(False)
         panel_der.config(width=400)
 
@@ -113,18 +112,7 @@ class VentasView:
         )
         btn_eliminar.pack(pady=5)
 
-        # Totales (sin IVA)
-        frame_totales = tk.Frame(panel_der, bg="white")
-        frame_totales.pack(fill="x", pady=10)
-
-        self.label_subtotal = tk.Label(frame_totales, text="Subtotal: $0", font=("Segoe UI", 11), bg="white")
-        self.label_subtotal.pack(anchor="e")
-
-        # self.label_iva ELIMINADO
-        self.label_total = tk.Label(frame_totales, text="Total: $0", font=("Segoe UI", 14, "bold"), fg="#1565C0", bg="white")
-        self.label_total.pack(anchor="e")
-
-        # Botón finalizar venta
+        # ✅ Botón finalizar venta
         btn_finalizar = tk.Button(
             panel_der,
             text="Finalizar venta",
@@ -137,6 +125,16 @@ class VentasView:
             pady=8
         )
         btn_finalizar.pack(pady=10)
+
+        # Totales
+        frame_totales = tk.Frame(panel_der, bg="white")
+        frame_totales.pack(fill="x", pady=10)
+
+        self.label_subtotal = tk.Label(frame_totales, text="Subtotal: $0", font=("Segoe UI", 11), bg="white")
+        self.label_subtotal.pack(anchor="e")
+
+        self.label_total = tk.Label(frame_totales, text="Total: $0", font=("Segoe UI", 14, "bold"), fg="#1565C0", bg="white")
+        self.label_total.pack(anchor="e")
 
     def buscar_productos(self):
         termino = self.entry_busqueda.get().strip()
@@ -152,7 +150,6 @@ class VentasView:
             )
 
     def centrar_ventana(self, ventana):
-        """Centra una ventana Toplevel respecto a la ventana principal."""
         ventana.update_idletasks()
         ancho = ventana.winfo_width()
         alto = ventana.winfo_height()
@@ -177,7 +174,6 @@ class VentasView:
         precio_str = item["values"][3].replace("$", "").replace(".", "")
         precio = float(precio_str)
 
-        # Ventana emergente centrada y con estilo
         ventana_cant = tk.Toplevel(self.contenedor)
         ventana_cant.title("Cantidad")
         ventana_cant.geometry("300x220")
@@ -229,7 +225,6 @@ class VentasView:
                 if cant > stock:
                     messagebox.showerror("Error", "Cantidad excede el stock disponible")
                     return
-                # Agregar al carrito
                 for item_carrito in self.carrito:
                     if item_carrito["producto_id"] == producto_id:
                         item_carrito["cantidad"] += cant
@@ -247,7 +242,6 @@ class VentasView:
             except ValueError:
                 messagebox.showerror("Error", "Ingrese un número válido")
 
-        # Botones con estilo
         frame_botones = tk.Frame(ventana_cant, bg="#f0f2f5")
         frame_botones.pack(pady=15)
 
@@ -264,8 +258,6 @@ class VentasView:
             cursor="hand2"
         )
         btn_aceptar.pack(side="left", padx=10)
-        btn_aceptar.bind("<Enter>", lambda e: btn_aceptar.config(bg="#2e7d32"))
-        btn_aceptar.bind("<Leave>", lambda e: btn_aceptar.config(bg="#43A047"))
 
         btn_cancelar = tk.Button(
             frame_botones,
@@ -280,8 +272,6 @@ class VentasView:
             cursor="hand2"
         )
         btn_cancelar.pack(side="left", padx=10)
-        btn_cancelar.bind("<Enter>", lambda e: btn_cancelar.config(bg="#546e7a"))
-        btn_cancelar.bind("<Leave>", lambda e: btn_cancelar.config(bg="#78909C"))
 
         ventana_cant.bind("<Return>", lambda event: confirmar())
 
@@ -318,10 +308,8 @@ class VentasView:
                 )
             )
 
-        # Sin IVA: total = subtotal
         total = subtotal
         self.label_subtotal.config(text=f"Subtotal: {formatear_precio(subtotal)}")
-        # self.label_iva ya no existe
         self.label_total.config(text=f"Total: {formatear_precio(total)}")
 
     def finalizar_venta(self):
@@ -341,7 +329,6 @@ class VentasView:
                     "precio_unitario": item["precio_unitario"]
                 })
             
-            # ✅ Capturar los IDs de venta y factura
             venta_id, factura_id, numero_factura = VentasController.realizar_venta(
                 self.usuario_id, items
             )
@@ -355,5 +342,25 @@ class VentasView:
             self.carrito.clear()
             self.actualizar_carrito()
             self.buscar_productos()
+            
+            # Verificar stock bajo después de la venta
+            self.verificar_stock_despues_venta()
+            
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo completar la venta: {e}")
+
+    def verificar_stock_despues_venta(self):
+        """Verifica si hay productos con stock bajo después de una venta."""
+        from models.notificacion import Notificacion
+        
+        productos_bajos = Notificacion.verificar_stock_bajo()
+        
+        if productos_bajos:
+            mensaje = "⚠️ ALERTA: Productos con stock bajo\n\n"
+            for p in productos_bajos[:5]:
+                mensaje += f"• {p['nombre']}: {p['stock']} (mínimo: {p['stock_minimo']})\n"
+            
+            if len(productos_bajos) > 5:
+                mensaje += f"\n... y {len(productos_bajos) - 5} más"
+            
+            messagebox.showwarning("⚠️ Stock Bajo", mensaje)

@@ -5,7 +5,8 @@ from views.ventas import VentasView
 from views.compras import ComprasView
 from views.proveedores import ProveedoresView
 from views.usuarios import UsuariosView
-from views.reportes import ReportesView  # <--- DESCOMENTADO
+from views.reportes import ReportesView
+from models.notificacion import Notificacion
 
 class MainWindow:
 
@@ -18,6 +19,7 @@ class MainWindow:
         self.root.configure(bg="#ECECEC")
 
         self.crear_interfaz()
+        self.mostrar_notificacion_stock()
         self.root.mainloop()
 
     def limpiar_contenido(self):
@@ -50,12 +52,35 @@ class MainWindow:
 
     def mostrar_reportes(self):
         self.limpiar_contenido()
-        ReportesView(self.contenido)  # <--- AHORA USA LA VISTA REAL
+        ReportesView(self.contenido)
 
     def mostrar_facturas(self):
         self.limpiar_contenido()
         from views.facturas import FacturasView
         FacturasView(self.contenido)
+
+    def mostrar_stock_bajo(self):
+        self.limpiar_contenido()
+        from views.stock_bajo import StockBajoView
+        StockBajoView(self.contenido)
+
+    def mostrar_notificacion_stock(self):
+        """Muestra una notificación si hay productos con stock bajo."""
+        from tkinter import messagebox
+        
+        productos_bajos = Notificacion.verificar_stock_bajo()
+        
+        if productos_bajos:
+            mensaje = "⚠️ ALERTA DE STOCK BAJO\n\n"
+            mensaje += "Los siguientes productos están por debajo del mínimo:\n\n"
+            
+            for p in productos_bajos[:10]:
+                mensaje += f"• {p['nombre']}: {p['stock']} / {p['stock_minimo']} (faltan {p['faltante']})\n"
+            
+            if len(productos_bajos) > 10:
+                mensaje += f"\n... y {len(productos_bajos) - 10} más"
+            
+            messagebox.showwarning("⚠️ Stock Bajo", mensaje)
 
     def crear_interfaz(self):
         header = tk.Frame(self.root, bg="#1565C0", height=60)
@@ -89,6 +114,7 @@ class MainWindow:
             "💰 Ventas": self.mostrar_ventas,
             "📄 Facturas": self.mostrar_facturas,
             "🚚 Compras": self.mostrar_compras,
+            "⚠️ Stock Bajo": self.mostrar_stock_bajo,
             "👥 Usuarios": self.mostrar_usuarios,
             "📦 Proveedores": self.mostrar_proveedores,
             "📊 Reportes": self.mostrar_reportes,

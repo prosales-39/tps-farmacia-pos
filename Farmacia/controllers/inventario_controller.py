@@ -47,3 +47,15 @@ class InventarioController:
     @staticmethod
     def eliminar_producto(id_producto):
         Producto.eliminar(id_producto)
+
+    @staticmethod
+    def verificar_stock_bajo():
+        """Verifica productos con stock bajo."""
+        from models.notificacion import Notificacion
+        return Notificacion.verificar_stock_bajo()
+
+    @staticmethod
+    def contar_stock_bajo():
+        """Cuenta productos con stock bajo."""
+        from models.notificacion import Notificacion
+        return Notificacion.contar_stock_bajo()
