@@ -52,6 +52,11 @@ class MainWindow:
         self.limpiar_contenido()
         ReportesView(self.contenido)  # <--- AHORA USA LA VISTA REAL
 
+    def mostrar_facturas(self):
+        self.limpiar_contenido()
+        from views.facturas import FacturasView
+        FacturasView(self.contenido)
+
     def crear_interfaz(self):
         header = tk.Frame(self.root, bg="#1565C0", height=60)
         header.pack(fill="x")
@@ -82,6 +87,7 @@ class MainWindow:
             "🏠 Inicio": self.mostrar_dashboard,
             "💊 Inventario": self.mostrar_inventario,
             "💰 Ventas": self.mostrar_ventas,
+            "📄 Facturas": self.mostrar_facturas,
             "🚚 Compras": self.mostrar_compras,
             "👥 Usuarios": self.mostrar_usuarios,
             "📦 Proveedores": self.mostrar_proveedores,

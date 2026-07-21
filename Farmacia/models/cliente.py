@@ -24,3 +24,13 @@ class Cliente:
 
         conexion.close()
         return cliente_id
+
+    @staticmethod
+    def obtener_por_id(cliente_id):
+        """Obtiene un cliente por su ID."""
+        conexion = get_connection()
+        cursor = conexion.cursor()
+        cursor.execute("SELECT * FROM clientes WHERE id = ?", (cliente_id,))
+        cliente = cursor.fetchone()
+        conexion.close()
+        return cliente

@@ -2,6 +2,7 @@ from models.venta import Venta
 from models.detalle_venta import DetalleVenta
 from models.producto import Producto
 from models.cliente import Cliente
+from models.factura import Factura
 
 class VentasController:
 
@@ -14,23 +15,34 @@ class VentasController:
         if not carrito:
             raise ValueError("El carrito está vacío")
 
-        
+        # Cliente "Mostrador"
         cliente_id = Cliente.obtener_o_crear_mostrador()
+        cliente = Cliente.obtener_por_id(cliente_id)
 
-        
+        # Calcular subtotal y total
         subtotal = sum(item["precio_unitario"] * item["cantidad"] for item in carrito)
-        iva = 0  
-        total = subtotal
+        iva = subtotal * 0.19  # IVA del 19%
+        total = subtotal + iva
 
         # Crear venta
         venta_id = Venta.crear(cliente_id, usuario_id, subtotal, iva, total)
 
-        
+        # Crear detalles y descontar stock
         for item in carrito:
             DetalleVenta.crear(venta_id, item["producto_id"], item["cantidad"], item["precio_unitario"])
             Producto.descontar_stock(item["producto_id"], item["cantidad"])
 
-        return venta_id
+        # ✅ CREAR FACTURA AUTOMÁTICAMENTE
+        factura_id, numero_factura = Factura.crear(
+            venta_id=venta_id,
+            subtotal=subtotal,
+            iva=iva,
+            total=total,
+            cliente_nombre=cliente["nombre"] if cliente else "Cliente Mostrador",
+            cliente_documento=cliente["documento"] if cliente else "00000000"
+        )
+
+        return venta_id, factura_id, numero_factura
 
     @staticmethod
     def obtener_productos_para_venta(termino=""):

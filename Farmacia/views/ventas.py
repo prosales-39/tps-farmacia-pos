@@ -340,8 +340,18 @@ class VentasView:
                     "cantidad": item["cantidad"],
                     "precio_unitario": item["precio_unitario"]
                 })
-            venta_id = VentasController.realizar_venta(self.usuario_id, items)
-            messagebox.showinfo("Venta registrada", f"Venta #{venta_id} realizada con éxito.")
+            
+            # ✅ Capturar los IDs de venta y factura
+            venta_id, factura_id, numero_factura = VentasController.realizar_venta(
+                self.usuario_id, items
+            )
+            
+            messagebox.showinfo(
+                "Venta registrada", 
+                f"✅ Venta #{venta_id} realizada con éxito.\n"
+                f"📄 Factura: {numero_factura}"
+            )
+            
             self.carrito.clear()
             self.actualizar_carrito()
             self.buscar_productos()
