@@ -11,7 +11,6 @@ class ReportesView:
         self.crear_interfaz()
 
     def crear_interfaz(self):
-        # Título
         tk.Label(
             self.contenedor,
             text="📊 Reportes",
@@ -20,28 +19,23 @@ class ReportesView:
             fg="#1565C0"
         ).pack(pady=(10, 5))
 
-        # Crear Notebook (pestañas)
         self.notebook = ttk.Notebook(self.contenedor)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Pestañas
         self.crear_tab_ventas()
         self.crear_tab_stock()
         self.crear_tab_compras()
         self.crear_tab_usuarios()
 
-        # Cargar datos iniciales
         self.cargar_datos_ventas()
         self.cargar_datos_stock()
         self.cargar_datos_compras()
         self.cargar_datos_usuarios()
 
     def crear_tab_ventas(self):
-        """Pestaña de reportes de ventas."""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="💵 Ventas")
 
-        # Frame para filtros
         frame_filtros = tk.Frame(tab, bg="white")
         frame_filtros.pack(fill="x", padx=10, pady=10)
 
@@ -64,15 +58,25 @@ class ReportesView:
             relief="flat"
         ).pack(side="left", padx=10)
 
-        # Frame para resultados
+        frame_botones_ventas = tk.Frame(tab, bg="white")
+        frame_botones_ventas.pack(fill="x", padx=10, pady=5)
+        
+        tk.Button(
+            frame_botones_ventas,
+            text="📥 Exportar Excel",
+            command=self.exportar_excel_ventas,
+            bg="#1565C0",
+            fg="white",
+            relief="flat",
+            padx=10
+        ).pack(side="left", padx=5)
+
         frame_resultados = tk.Frame(tab, bg="white")
         frame_resultados.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Resumen en tarjetas
         self.frame_resumen_ventas = tk.Frame(frame_resultados, bg="white")
         self.frame_resumen_ventas.pack(fill="x", pady=5)
 
-        # Treeview para productos más vendidos
         tk.Label(frame_resultados, text="Productos más vendidos", font=("Segoe UI", 12, "bold"), bg="white").pack(anchor="w")
         self.tree_top_productos = ttk.Treeview(
             frame_resultados,
@@ -89,11 +93,9 @@ class ReportesView:
         self.tree_top_productos.pack(fill="both", expand=True, pady=5)
 
     def crear_tab_stock(self):
-        """Pestaña de reportes de inventario."""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="📦 Inventario")
 
-        # Frame para controles
         frame_controles = tk.Frame(tab, bg="white")
         frame_controles.pack(fill="x", padx=10, pady=10)
 
@@ -106,7 +108,6 @@ class ReportesView:
             relief="flat"
         ).pack(side="left", padx=5)
 
-        # Treeview para stock bajo
         tk.Label(tab, text="⚠️ Productos con stock bajo", font=("Segoe UI", 12, "bold"), bg="white").pack(anchor="w", padx=10)
         self.tree_stock_bajo = ttk.Treeview(
             tab,
@@ -124,7 +125,6 @@ class ReportesView:
         self.tree_stock_bajo.column("minimo", width=80, anchor="center")
         self.tree_stock_bajo.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Treeview para productos por vencer
         tk.Label(tab, text="⏳ Productos por vencer (próximos 30 días)", font=("Segoe UI", 12, "bold"), bg="white").pack(anchor="w", padx=10)
         self.tree_por_vencer = ttk.Treeview(
             tab,
@@ -143,11 +143,9 @@ class ReportesView:
         self.tree_por_vencer.pack(fill="both", expand=True, padx=10, pady=5)
 
     def crear_tab_compras(self):
-        """Pestaña de reportes de compras."""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="🚚 Compras")
 
-        # Frame para filtros
         frame_filtros = tk.Frame(tab, bg="white")
         frame_filtros.pack(fill="x", padx=10, pady=10)
 
@@ -170,27 +168,50 @@ class ReportesView:
             relief="flat"
         ).pack(side="left", padx=10)
 
-        # Frame para resultados
+        frame_botones_compras = tk.Frame(tab, bg="white")
+        frame_botones_compras.pack(fill="x", padx=10, pady=5)
+
+        tk.Button(
+            frame_botones_compras,
+            text="📥 Exportar Excel",
+            command=self.exportar_excel_compras,
+            bg="#1565C0",
+            fg="white",
+            relief="flat",
+            padx=10
+        ).pack(side="left", padx=5)
+
         self.frame_resumen_compras = tk.Frame(tab, bg="white")
         self.frame_resumen_compras.pack(fill="x", padx=10, pady=10)
 
-        # Label para resumen
         self.label_resumen_compras = tk.Label(tab, text="", font=("Segoe UI", 11), bg="white")
         self.label_resumen_compras.pack(padx=10, pady=10, anchor="w")
 
     def crear_tab_usuarios(self):
-        """Pestaña de reportes por usuario."""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="👥 Usuarios")
 
+        frame_controles = tk.Frame(tab, bg="white")
+        frame_controles.pack(fill="x", padx=10, pady=10)
+
         tk.Button(
-            tab,
+            frame_controles,
             text="Actualizar",
             command=self.cargar_datos_usuarios,
             bg="#1565C0",
             fg="white",
             relief="flat"
-        ).pack(pady=10)
+        ).pack(side="left", padx=5)
+
+        tk.Button(
+            frame_controles,
+            text="📥 Exportar Excel",
+            command=self.exportar_excel_usuarios,
+            bg="#1565C0",
+            fg="white",
+            relief="flat",
+            padx=10
+        ).pack(side="left", padx=5)
 
         self.tree_ventas_por_usuario = ttk.Treeview(
             tab,
@@ -208,12 +229,10 @@ class ReportesView:
 
     def cargar_datos_ventas(self):
         try:
-            # Resumen
             fecha_ini = self.entry_fecha_ini.get().strip()
             fecha_fin = self.entry_fecha_fin.get().strip()
             resumen = ReportesController.obtener_resumen_ventas(fecha_ini, fecha_fin)
 
-            # Limpiar frame de resumen
             for widget in self.frame_resumen_ventas.winfo_children():
                 widget.destroy()
 
@@ -252,7 +271,6 @@ class ReportesView:
                     bg="white"
                 ).pack(side="left", padx=15)
 
-            # Productos más vendidos
             for item in self.tree_top_productos.get_children():
                 self.tree_top_productos.delete(item)
 
@@ -268,7 +286,6 @@ class ReportesView:
 
     def cargar_datos_stock(self):
         try:
-            # Stock bajo
             for item in self.tree_stock_bajo.get_children():
                 self.tree_stock_bajo.delete(item)
 
@@ -280,7 +297,6 @@ class ReportesView:
                     values=(p["codigo"], p["nombre"], p["stock"], p["stock_minimo"])
                 )
 
-            # Por vencer
             for item in self.tree_por_vencer.get_children():
                 self.tree_por_vencer.delete(item)
 
@@ -325,3 +341,120 @@ class ReportesView:
                 )
         except Exception as e:
             messagebox.showerror("Error", f"No se pudieron cargar los datos: {e}")
+
+    def exportar_excel(self, datos, columnas, nombre_archivo="reporte"):
+        import openpyxl
+        from datetime import datetime
+        from tkinter import filedialog
+        
+        archivo = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel files", "*.xlsx"), ("Todos los archivos", "*.*")],
+            initialfile=f"{nombre_archivo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        )
+        
+        if not archivo:
+            return
+            
+        try:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Reporte"
+            
+            ws.append([col["titulo"] for col in columnas])
+            
+            for row in datos:
+                ws.append([row.get(col["clave"], "") for col in columnas])
+                
+            wb.save(archivo)
+            messagebox.showinfo("Exportación exitosa", f"Archivo guardado en:\n{archivo}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo exportar: {e}")
+
+    def exportar_excel_ventas(self):
+        try:
+            fecha_ini = self.entry_fecha_ini.get().strip()
+            fecha_fin = self.entry_fecha_fin.get().strip()
+            
+            resumen = ReportesController.obtener_resumen_ventas(fecha_ini, fecha_fin)
+            top = ReportesController.obtener_productos_mas_vendidos(10)
+            
+            datos = []
+            if resumen:
+                datos.append({
+                    "fecha": "RESUMEN",
+                    "producto": "",
+                    "cantidad": "",
+                    "subtotal": resumen.get("subtotal", 0),
+                    "iva": resumen.get("total_iva", 0),
+                    "total": resumen.get("total_ingresos", 0)
+                })
+                
+            for p in top:
+                datos.append({
+                    "fecha": "",
+                    "producto": p["nombre"],
+                    "cantidad": p["total_vendido"],
+                    "subtotal": "",
+                    "iva": "",
+                    "total": p["total_ingresos"]
+                })
+                
+            columnas = [
+                {"titulo": "Fecha", "clave": "fecha"},
+                {"titulo": "Producto", "clave": "producto"},
+                {"titulo": "Cantidad", "clave": "cantidad"},
+                {"titulo": "Subtotal", "clave": "subtotal"},
+                {"titulo": "IVA", "clave": "iva"},
+                {"titulo": "Total", "clave": "total"}
+            ]
+            
+            self.exportar_excel(datos, columnas, "reporte_ventas")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo exportar: {e}")
+
+    def exportar_excel_compras(self):
+        try:
+            fecha_ini = self.entry_compra_ini.get().strip()
+            fecha_fin = self.entry_compra_fin.get().strip()
+            resumen = ReportesController.obtener_resumen_compras(fecha_ini, fecha_fin)
+            
+            datos = []
+            if resumen:
+                datos.append({
+                    "compras": resumen.get("total_compras", 0),
+                    "total_gastado": resumen.get("total_gastado", 0),
+                    "promedio": resumen.get("promedio_compra", 0)
+                })
+                
+            columnas = [
+                {"titulo": "Total Compras", "clave": "compras"},
+                {"titulo": "Total Gastado", "clave": "total_gastado"},
+                {"titulo": "Promedio Compra", "clave": "promedio"}
+            ]
+            
+            self.exportar_excel(datos, columnas, "reporte_compras")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo exportar: {e}")
+
+    def exportar_excel_usuarios(self):
+        try:
+            lista_usuarios = ReportesController.obtener_ventas_por_usuario()
+            datos = []
+            for d in lista_usuarios:
+                datos.append({
+                    "usuario": d["usuario"],
+                    "ventas": d["total_ventas"],
+                    "ingresos": d["total_ingresos"]
+                })
+                
+            columnas = [
+                {"titulo": "Usuario", "clave": "usuario"},
+                {"titulo": "Total Ventas", "clave": "ventas"},
+                {"titulo": "Ingresos Generados", "clave": "ingresos"}
+            ]
+            
+            self.exportar_excel(datos, columnas, "reporte_usuarios")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo exportar: {e}")

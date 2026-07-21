@@ -1,1 +1,2 @@
-todo falta
+
+pip install Pillow
