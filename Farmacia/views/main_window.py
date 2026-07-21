@@ -7,6 +7,7 @@ from views.proveedores import ProveedoresView
 from views.usuarios import UsuariosView
 from views.reportes import ReportesView
 from models.notificacion import Notificacion
+from utils.backup import BackupManager
 
 class MainWindow:
 
@@ -20,6 +21,10 @@ class MainWindow:
 
         self.crear_interfaz()
         self.mostrar_notificacion_stock()
+        
+        # Capturar evento de cierre para backup automático
+        self.root.protocol("WM_DELETE_WINDOW", self.cerrar_aplicacion)
+        
         self.root.mainloop()
 
     def limpiar_contenido(self):
@@ -64,6 +69,11 @@ class MainWindow:
         from views.stock_bajo import StockBajoView
         StockBajoView(self.contenido)
 
+    def mostrar_backup(self):
+        self.limpiar_contenido()
+        from views.backup import BackupView
+        BackupView(self.contenido)
+
     def mostrar_notificacion_stock(self):
         """Muestra una notificación si hay productos con stock bajo."""
         from tkinter import messagebox
@@ -81,6 +91,17 @@ class MainWindow:
                 mensaje += f"\n... y {len(productos_bajos) - 10} más"
             
             messagebox.showwarning("⚠️ Stock Bajo", mensaje)
+
+    def cerrar_aplicacion(self):
+        """Realiza backup automático al cerrar la aplicación."""
+        try:
+            backup_path = BackupManager.crear_backup()
+            BackupManager.limpiar_backups_antiguos(10)
+            print(f"✅ Backup automático creado: {backup_path}")
+        except Exception as e:
+            print(f"⚠️ Error al crear backup automático: {e}")
+        finally:
+            self.root.destroy()
 
     def crear_interfaz(self):
         header = tk.Frame(self.root, bg="#1565C0", height=60)
@@ -118,7 +139,8 @@ class MainWindow:
             "👥 Usuarios": self.mostrar_usuarios,
             "📦 Proveedores": self.mostrar_proveedores,
             "📊 Reportes": self.mostrar_reportes,
-            "🚪 Salir": self.root.destroy
+            "💾 Backup": self.mostrar_backup,
+            "🚪 Salir": self.cerrar_aplicacion
         }
 
         for texto, comando in opciones.items():
