@@ -7,21 +7,24 @@ from models.factura import Factura
 class VentasController:
 
     @staticmethod
-    def realizar_venta(usuario_id, carrito):
+    def realizar_venta(usuario_id, carrito, cliente_id=None):
         """
         carrito: lista de diccionarios con producto_id, cantidad, precio_unitario
+        cliente_id: ID del cliente (opcional, si no se pasa usa 'Mostrador')
         Retorna el ID de la venta creada.
         """
         if not carrito:
             raise ValueError("El carrito está vacío")
 
-        # Cliente "Mostrador"
-        cliente_id = Cliente.obtener_o_crear_mostrador()
+        # Si no se pasa cliente_id, usar 'Mostrador'
+        if cliente_id is None:
+            cliente_id = Cliente.obtener_o_crear_mostrador()
+        
         cliente = Cliente.obtener_por_id(cliente_id)
 
         # Calcular subtotal y total
         subtotal = sum(item["precio_unitario"] * item["cantidad"] for item in carrito)
-        iva = subtotal * 0.19  # IVA del 19%
+        iva = subtotal * 0.19
         total = subtotal + iva
 
         # Crear venta
@@ -32,7 +35,7 @@ class VentasController:
             DetalleVenta.crear(venta_id, item["producto_id"], item["cantidad"], item["precio_unitario"])
             Producto.descontar_stock(item["producto_id"], item["cantidad"])
 
-        # ✅ CREAR FACTURA AUTOMÁTICAMENTE
+        # Crear factura
         factura_id, numero_factura = Factura.crear(
             venta_id=venta_id,
             subtotal=subtotal,

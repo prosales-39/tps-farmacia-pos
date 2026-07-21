@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from controllers.ventas_controller import VentasController
 from utils.helpers import formatear_precio
+from database.conexion import get_connection
 
 class VentasView:
 
@@ -10,9 +11,11 @@ class VentasView:
         self.usuario_id = usuario_id
         self.carrito = []
         self.total = 0.0
+        self.cliente_seleccionado = None
 
         self.crear_interfaz()
         self.buscar_productos()
+        self.cargar_cliente_mostrador()
 
     def crear_interfaz(self):
         # Título
@@ -23,6 +26,87 @@ class VentasView:
             bg="white",
             fg="#1565C0"
         ).pack(pady=(10, 5))
+
+        # Frame para selección de cliente
+        frame_cliente = tk.Frame(self.contenedor, bg="white")
+        frame_cliente.pack(fill="x", padx=20, pady=5)
+
+        tk.Label(frame_cliente, text="Buscar cliente:", bg="white", font=("Segoe UI", 11)).pack(side="left", padx=5)
+        
+        self.entry_buscar_cliente = tk.Entry(frame_cliente, font=("Segoe UI", 11), width=25)
+        self.entry_buscar_cliente.pack(side="left", padx=5)
+        self.entry_buscar_cliente.bind("<KeyRelease>", self.buscar_clientes_automatico)
+
+        tk.Button(
+            frame_cliente,
+            text="🔍 Buscar",
+            command=self.buscar_clientes_automatico,
+            bg="#1565C0",
+            fg="white",
+            relief="flat",
+            padx=10
+        ).pack(side="left", padx=5)
+
+        tk.Button(
+            frame_cliente,
+            text="➕ Nuevo Cliente",
+            command=self.nuevo_cliente,
+            bg="#43A047",
+            fg="white",
+            relief="flat",
+            padx=10
+        ).pack(side="left", padx=5)
+
+        tk.Button(
+            frame_cliente,
+            text="📋 Historial",
+            command=self.ver_historial_cliente,
+            bg="#1565C0",
+            fg="white",
+            relief="flat",
+            padx=10
+        ).pack(side="left", padx=5)
+
+        # Label para mostrar cliente seleccionado
+        self.label_cliente_seleccionado = tk.Label(
+            frame_cliente,
+            text="Cliente: Mostrador",
+            font=("Segoe UI", 10, "bold"),
+            bg="white",
+            fg="#1565C0"
+        )
+        self.label_cliente_seleccionado.pack(side="right", padx=10)
+
+        # Lista de resultados de búsqueda
+        self.frame_resultados = tk.Frame(self.contenedor, bg="white", height=100)
+        self.frame_resultados.pack(fill="x", padx=20, pady=5)
+        self.frame_resultados.pack_propagate(False)
+        self.frame_resultados.pack_forget()  # Ocultar inicialmente
+
+        # Treeview para resultados de clientes
+        self.tree_clientes = ttk.Treeview(
+            self.frame_resultados,
+            columns=("id", "documento", "nombre", "telefono"),
+            show="headings",
+            height=4
+        )
+        self.tree_clientes.heading("id", text="ID")
+        self.tree_clientes.heading("documento", text="Documento")
+        self.tree_clientes.heading("nombre", text="Nombre")
+        self.tree_clientes.heading("telefono", text="Teléfono")
+        self.tree_clientes.column("id", width=40, anchor="center")
+        self.tree_clientes.column("documento", width=120, anchor="center")
+        self.tree_clientes.column("nombre", width=200, anchor="w")
+        self.tree_clientes.column("telefono", width=120, anchor="center")
+
+        scroll_clientes = ttk.Scrollbar(self.frame_resultados, orient="vertical", command=self.tree_clientes.yview)
+        self.tree_clientes.configure(yscrollcommand=scroll_clientes.set)
+
+        self.tree_clientes.pack(side="left", fill="both", expand=True)
+        scroll_clientes.pack(side="right", fill="y")
+
+        self.tree_clientes.bind("<<TreeviewSelect>>", self.on_cliente_seleccionado)
+        self.tree_clientes.bind("<Double-1>", self.on_cliente_doble_click)
 
         # Panel principal
         panel_principal = tk.Frame(self.contenedor, bg="white")
@@ -112,7 +196,7 @@ class VentasView:
         )
         btn_eliminar.pack(pady=5)
 
-        # ✅ Botón finalizar venta
+        # Botón finalizar venta
         btn_finalizar = tk.Button(
             panel_der,
             text="Finalizar venta",
@@ -135,6 +219,236 @@ class VentasView:
 
         self.label_total = tk.Label(frame_totales, text="Total: $0", font=("Segoe UI", 14, "bold"), fg="#1565C0", bg="white")
         self.label_total.pack(anchor="e")
+
+    def cargar_cliente_mostrador(self):
+        """Carga el cliente Mostrador por defecto."""
+        from models.cliente import Cliente
+        clientes = Cliente.obtener_todos()
+        for c in clientes:
+            if c["nombre"] == "Mostrador":
+                self.cliente_seleccionado = c["id"]
+                self.label_cliente_seleccionado.config(text=f"Cliente: {c['nombre']} ({c['documento']})")
+                return
+        
+        if clientes:
+            self.cliente_seleccionado = clientes[0]["id"]
+            self.label_cliente_seleccionado.config(text=f"Cliente: {clientes[0]['nombre']}")
+
+    def buscar_clientes_automatico(self, event=None):
+        """Busca clientes por documento o nombre."""
+        from models.cliente import Cliente
+        termino = self.entry_buscar_cliente.get().strip()
+        
+        if not termino:
+            self.frame_resultados.pack_forget()
+            return
+        
+        self.frame_resultados.pack(fill="x", padx=20, pady=5)
+        
+        for item in self.tree_clientes.get_children():
+            self.tree_clientes.delete(item)
+        
+        clientes = Cliente.buscar(termino)
+        
+        if not clientes:
+            self.tree_clientes.insert("", "end", values=("", "", "No se encontraron clientes", ""))
+            return
+        
+        for c in clientes:
+            self.tree_clientes.insert(
+                "",
+                "end",
+                values=(c["id"], c["documento"] or "", c["nombre"], c["telefono"] or "")
+            )
+
+    def on_cliente_seleccionado(self, event):
+        """Selecciona un cliente de la lista."""
+        seleccion = self.tree_clientes.selection()
+        if not seleccion:
+            return
+        
+        item = self.tree_clientes.item(seleccion[0])
+        valores = item["values"]
+        if not valores or not valores[0]:
+            return
+        
+        cliente_id = valores[0]
+        self.cliente_seleccionado = cliente_id
+        
+        from models.cliente import Cliente
+        cliente = Cliente.obtener_por_id(cliente_id)
+        if cliente:
+            self.label_cliente_seleccionado.config(
+                text=f"Cliente: {cliente['nombre']} ({cliente['documento']})"
+            )
+        
+        self.frame_resultados.pack_forget()
+        self.entry_buscar_cliente.delete(0, tk.END)
+
+    def on_cliente_doble_click(self, event):
+        """Selecciona cliente al hacer doble clic."""
+        self.on_cliente_seleccionado(event)
+
+    def nuevo_cliente(self):
+        """Abre una ventana para crear un nuevo cliente."""
+        ventana = tk.Toplevel(self.contenedor)
+        ventana.title("Nuevo Cliente")
+        ventana.geometry("400x300")
+        ventana.resizable(False, False)
+        ventana.grab_set()
+
+        frame = tk.Frame(ventana, padx=20, pady=20)
+        frame.pack(fill="both", expand=True)
+
+        campos = [
+            ("Documento:", "documento"),
+            ("Nombre completo:", "nombre"),
+            ("Teléfono:", "telefono"),
+            ("Dirección:", "direccion")
+        ]
+
+        entries = {}
+        for i, (label, key) in enumerate(campos):
+            tk.Label(frame, text=label, font=("Segoe UI", 10)).grid(row=i, column=0, sticky="w", pady=5)
+            entry = tk.Entry(frame, font=("Segoe UI", 10), width=30)
+            entry.grid(row=i, column=1, padx=10, pady=5, sticky="w")
+            entries[key] = entry
+
+        def guardar_cliente():
+            from models.cliente import Cliente
+            documento = entries["documento"].get().strip()
+            nombre = entries["nombre"].get().strip()
+            telefono = entries["telefono"].get().strip()
+            direccion = entries["direccion"].get().strip()
+
+            if not documento or not nombre:
+                messagebox.showwarning("Campos incompletos", "Documento y nombre son obligatorios.")
+                return
+
+            try:
+                Cliente.crear(documento, nombre, telefono, direccion)
+                messagebox.showinfo("Éxito", "Cliente creado correctamente.")
+                ventana.destroy()
+                self.cargar_cliente_mostrador()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo crear el cliente: {e}")
+
+        btn_frame = tk.Frame(frame)
+        btn_frame.grid(row=len(campos), column=0, columnspan=2, pady=20)
+
+        tk.Button(
+            btn_frame,
+            text="Guardar",
+            command=guardar_cliente,
+            bg="#1565C0",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            relief="flat",
+            padx=20,
+            pady=5
+        ).pack(side="left", padx=10)
+
+        tk.Button(
+            btn_frame,
+            text="Cancelar",
+            command=ventana.destroy,
+            bg="#78909C",
+            fg="white",
+            font=("Segoe UI", 10),
+            relief="flat",
+            padx=20,
+            pady=5
+        ).pack(side="left", padx=10)
+
+    def ver_historial_cliente(self):
+        """Abre una ventana con el historial de compras del cliente seleccionado."""
+        if not self.cliente_seleccionado:
+            messagebox.showwarning("Seleccionar", "Primero seleccione un cliente.")
+            return
+
+        from models.cliente import Cliente
+        cliente = Cliente.obtener_por_id(self.cliente_seleccionado)
+        if not cliente:
+            messagebox.showerror("Error", "Cliente no encontrado.")
+            return
+
+        conexion = get_connection()
+        cursor = conexion.cursor()
+        cursor.execute("""
+            SELECT 
+                v.id,
+                v.fecha,
+                v.total,
+                COUNT(dv.id) as productos,
+                GROUP_CONCAT(p.nombre, ', ') as productos_nombres
+            FROM ventas v
+            INNER JOIN detalle_venta dv ON v.id = dv.venta_id
+            INNER JOIN productos p ON dv.producto_id = p.id
+            WHERE v.cliente_id = ?
+            GROUP BY v.id
+            ORDER BY v.fecha DESC
+            LIMIT 20
+        """, (self.cliente_seleccionado,))
+        historial = cursor.fetchall()
+        conexion.close()
+
+        ventana = tk.Toplevel(self.contenedor)
+        ventana.title(f"Historial de {cliente['nombre']}")
+        ventana.geometry("800x500")
+        ventana.grab_set()
+
+        tk.Label(
+            ventana,
+            text=f"📋 Historial de compras - {cliente['nombre']}",
+            font=("Segoe UI", 16, "bold"),
+            bg="white",
+            fg="#1565C0"
+        ).pack(pady=10)
+
+        if not historial:
+            tk.Label(
+                ventana,
+                text="Este cliente no tiene compras registradas.",
+                font=("Segoe UI", 12),
+                bg="white",
+                fg="#555"
+            ).pack(pady=50)
+            return
+
+        frame_tabla = tk.Frame(ventana, bg="white")
+        frame_tabla.pack(fill="both", expand=True, padx=20, pady=10)
+
+        columnas = ("Fecha", "Total", "Productos", "Detalle")
+        tabla = ttk.Treeview(
+            frame_tabla,
+            columns=columnas,
+            show="headings",
+            height=15
+        )
+
+        tabla.heading("Fecha", text="Fecha")
+        tabla.heading("Total", text="Total")
+        tabla.heading("Productos", text="Cant. Productos")
+        tabla.heading("Detalle", text="Productos")
+
+        tabla.column("Fecha", width=120, anchor="center")
+        tabla.column("Total", width=120, anchor="e")
+        tabla.column("Productos", width=100, anchor="center")
+        tabla.column("Detalle", width=350, anchor="w")
+
+        tabla.pack(fill="both", expand=True)
+
+        for row in historial:
+            tabla.insert(
+                "",
+                "end",
+                values=(
+                    row["fecha"],
+                    f"${row['total']:,.0f}".replace(",", "."),
+                    row["productos"],
+                    row["productos_nombres"][:80] + ("..." if len(row["productos_nombres"]) > 80 else "")
+                )
+            )
 
     def buscar_productos(self):
         termino = self.entry_busqueda.get().strip()
@@ -317,10 +631,17 @@ class VentasView:
             messagebox.showwarning("Carrito vacío", "No hay productos en el carrito")
             return
 
+        if not self.cliente_seleccionado:
+            messagebox.showwarning("Cliente", "Seleccione un cliente.")
+            return
+
         if not messagebox.askyesno("Confirmar venta", "¿Registrar esta venta?"):
             return
 
         try:
+            from models.cliente import Cliente
+            cliente = Cliente.obtener_por_id(self.cliente_seleccionado)
+            
             items = []
             for item in self.carrito:
                 items.append({
@@ -330,27 +651,25 @@ class VentasView:
                 })
             
             venta_id, factura_id, numero_factura = VentasController.realizar_venta(
-                self.usuario_id, items
+                self.usuario_id, items, self.cliente_seleccionado
             )
             
             messagebox.showinfo(
                 "Venta registrada", 
                 f"✅ Venta #{venta_id} realizada con éxito.\n"
-                f"📄 Factura: {numero_factura}"
+                f"📄 Factura: {numero_factura}\n"
+                f"👤 Cliente: {cliente['nombre']}"
             )
             
             self.carrito.clear()
             self.actualizar_carrito()
             self.buscar_productos()
-            
-            # Verificar stock bajo después de la venta
             self.verificar_stock_despues_venta()
             
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo completar la venta: {e}")
 
     def verificar_stock_despues_venta(self):
-        """Verifica si hay productos con stock bajo después de una venta."""
         from models.notificacion import Notificacion
         
         productos_bajos = Notificacion.verificar_stock_bajo()
