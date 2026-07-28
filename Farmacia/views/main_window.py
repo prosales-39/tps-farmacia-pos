@@ -107,7 +107,6 @@ class MainWindow:
         productos_bajos = Notificacion.verificar_stock_bajo()
         
         if productos_bajos:
-            # Verificar si algún producto está críticamente bajo (stock = 0)
             criticos = [p for p in productos_bajos if p["stock"] == 0]
             
             if criticos:
@@ -207,9 +206,9 @@ class MainWindow:
                     text=texto,
                     command=comando,
                     relief="flat",
-                    bg="#1a237e",
+                    bg="#263238",  # ✅ Cambiado: mismo color que el resto
                     fg="white",
-                    activebackground="#283593",
+                    activebackground="#37474F",
                     activeforeground="white",
                     font=("Segoe UI", 11),
                     anchor="w",

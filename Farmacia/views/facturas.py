@@ -44,6 +44,17 @@ class FacturasView:
             padx=15
         ).pack(side="left", padx=5)
 
+        # ✅ NUEVO BOTÓN - Ver Factura PDF
+        tk.Button(
+            frame_filtros,
+            text="📄 Ver Factura PDF",
+            command=self.ver_factura_pdf,
+            bg="#1565C0",
+            fg="white",
+            relief="flat",
+            padx=15
+        ).pack(side="left", padx=5)
+
         # Tabla de facturas
         frame_tabla = tk.Frame(self.contenedor, bg="white")
         frame_tabla.pack(fill="both", expand=True, padx=20, pady=10)
@@ -266,3 +277,26 @@ class FacturasView:
             )
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo exportar: {e}")
+
+    def ver_factura_pdf(self):
+        """Genera y abre el PDF de la factura seleccionada con formato profesional."""
+        seleccion = self.tabla.selection()
+        if not seleccion:
+            messagebox.showwarning("Seleccionar", "Seleccione una factura")
+            return
+
+        item = self.tabla.item(seleccion[0])
+        factura_id = item["tags"][0]
+
+        try:
+            from models.factura import Factura
+            ruta = Factura.generar_pdf_factura(factura_id)
+            
+            if ruta:
+                import os
+                os.startfile(ruta)
+                messagebox.showinfo("Éxito", f"Factura generada:\n{ruta}")
+            else:
+                messagebox.showerror("Error", "No se pudo generar la factura PDF")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo generar la factura: {e}")
